@@ -2,11 +2,49 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitorização</title>
+    <title>Central Preparação Monitor</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="tornado.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1b2836">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7f7f7;
+            margin: 0;
+        }
+        .container {
+            max-width: 750px;
+            margin: 40px auto 0 auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 6px 32px rgba(0,24,64,0.06);
+            padding: 40px 40px 60px 40px;
+        }
+        h1 {
+            color: #1b2836;
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        p {
+            font-size: 1.2rem;
+            color: #222;
+        }
+    </style>
 </head>
 <body>
-    <h1>Bem-vindo ao sistema de monitorização</h1>
-    <p>Este é um sistema para monitorizar incêndios, tempestades e terremotos em Portugal Continental.</p>
+    <div class="container">
+        <h1>Bem-vindo ao sistema de monitorização</h1>
+        <p>
+            Este é um sistema para monitorizar incêndios, tempestades e terremotos em Portugal Continental.
+        </p>
+    </div>
+    <script src="painel.js"></script>
+    <script>
+        // Registrar service worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
 </body>
 </html>
