@@ -1,0 +1,6 @@
+git clone https://github.com/joaor707/central-preparacao-monitor.git
+cd central-preparacao-monitor
+echo "# Central Preparação Monitor" > README.md
+git add README.md
+git commit -m "Commit inicial"
+git push origin main
