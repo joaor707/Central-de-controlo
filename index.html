@@ -6,34 +6,629 @@
   <title>Central Preparação Monitor</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="tornado.svg">
+  
+  <!-- Local styles for map and chart fallbacks -->
+  
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #fafafa;
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
-    .icon {
-      width: 128px;
-      margin-top: 40px;
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
     }
-    h1 {
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .header .icon {
+      width: 48px;
+      height: 48px;
+      vertical-align: middle;
+      margin-right: 15px;
+    }
+
+    .header h1 {
+      display: inline-block;
       color: #30336b;
+      font-size: 28px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .status.online {
+      color: #28a745;
+    }
+
+    .status.offline {
+      color: #dc3545;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card.fire {
+      border-left: 4px solid #dc3545;
+    }
+
+    .stat-card.weather {
+      border-left: 4px solid #ffc107;
+    }
+
+    .stat-card.earthquake {
+      border-left: 4px solid #17a2b8;
+    }
+
+    .stat-card h3 {
+      color: #30336b;
+      margin-bottom: 15px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-number {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .stat-card.fire .stat-number {
+      color: #dc3545;
+    }
+
+    .stat-card.weather .stat-number {
+      color: #ffc107;
+    }
+
+    .stat-card.earthquake .stat-number {
+      color: #17a2b8;
+    }
+
+    .stat-description {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .map-container, .chart-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+      color: #30336b;
+      margin-bottom: 20px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    #map {
+      height: 400px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: #f8f9fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-placeholder {
+      text-align: center;
+      color: #666;
+    }
+
+    .portugal-map {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 50%, #DEB887 100%);
+    }
+
+    .map-marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .map-marker:hover {
+      transform: scale(1.2);
+    }
+
+    #eventsChart {
+      height: 400px;
+      position: relative;
+    }
+
+    .chart-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .simple-chart {
+      width: 100%;
+      height: 300px;
+      display: flex;
+      align-items: end;
+      justify-content: space-around;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .chart-bar {
+      width: 20px;
+      background: linear-gradient(to top, #dc3545, #ff6b7d);
+      border-radius: 4px 4px 0 0;
+      margin: 0 2px;
+      position: relative;
+      min-height: 5px;
+    }
+
+    .chart-bar.earthquake {
+      background: linear-gradient(to top, #17a2b8, #5bc0de);
+    }
+
+    .chart-labels {
+      display: flex;
+      justify-content: space-around;
+      padding: 0 20px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .alerts-section {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .alert-item.high {
+      background: #fff5f5;
+      border-left: 4px solid #dc3545;
+    }
+
+    .alert-item.medium {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+    }
+
+    .alert-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+    }
+
+    .alert-item.high .alert-icon {
+      background: #dc3545;
+    }
+
+    .alert-item.medium .alert-icon {
+      background: #ffc107;
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-weight: 600;
+      color: #30336b;
+      margin-bottom: 5px;
+    }
+
+    .alert-details {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .update-time {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
       margin-top: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #30336b;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        padding: 15px;
+      }
+    }
+
+    .no-data {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 20px;
     }
   </style>
 </head>
 <body>
-  <img src="tornado.svg" alt="Tornado" class="icon" />
-  <h1>Central Preparação Monitor</h1>
-  <p>Site PWA inicial.</p>
+  <header class="header">
+    <img src="tornado.svg" alt="Tornado" class="icon" />
+    <h1>Central Preparação Monitor</h1>
+    <div class="status" id="status">🔄 Carregando dados...</div>
+  </header>
+
+  <div class="container">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card fire" onclick="focusOnFires()">
+        <h3>🔥 Incêndios Ativos</h3>
+        <div class="stat-number" id="fireCount">-</div>
+        <div class="stat-description" id="fireDescription">Carregando dados de incêndios...</div>
+      </div>
+      
+      <div class="stat-card weather" onclick="focusOnWeather()">
+        <h3>⛈️ Avisos Meteorológicos</h3>
+        <div class="stat-number" id="weatherCount">-</div>
+        <div class="stat-description" id="weatherDescription">Carregando avisos meteorológicos...</div>
+      </div>
+      
+      <div class="stat-card earthquake" onclick="focusOnEarthquakes()">
+        <h3>🌍 Sismos Recentes</h3>
+        <div class="stat-number" id="earthquakeCount">-</div>
+        <div class="stat-description" id="earthquakeDescription">Carregando dados sísmicos...</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="map-container">
+        <h2 class="section-title">Mapa de Eventos</h2>
+        <div id="map">
+          <div class="portugal-map">
+            <div class="map-marker" style="top: 30%; left: 45%;" title="Incêndio - Serra da Estrela">🔥</div>
+            <div class="map-marker" style="top: 15%; left: 25%;" title="Incêndio - Peneda-Gerês">🔥</div>
+            <div class="map-marker" style="top: 70%; left: 50%;" title="Sismo - Lisboa">🌍</div>
+            <div class="map-marker" style="top: 85%; left: 60%;" title="Sismo - Faro">🌍</div>
+            <div class="map-marker" style="top: 50%; left: 40%;" title="Sua localização">📍</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <h2 class="section-title">Estatísticas por Hora</h2>
+        <div id="eventsChart">
+          <div class="chart-placeholder">
+            <div class="simple-chart" id="simpleChart"></div>
+            <div class="chart-labels" id="chartLabels"></div>
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+              🔥 Incêndios &nbsp;&nbsp; 🌍 Sismos
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proximity Alerts -->
+    <div class="alerts-section">
+      <h2 class="section-title">🚨 Alertas de Proximidade</h2>
+      <div id="alertsContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          Verificando alertas de proximidade...
+        </div>
+      </div>
+    </div>
+
+    <div class="update-time" id="updateTime">
+      Última atualização: Carregando...
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="api.js"></script>
   <script>
+    let userLocation = { lat: 39.5, lon: -8.0 }; // Default to Portugal center
+
+    // Initialize the dashboard
+    async function initDashboard() {
+      try {
+        updateStatus('🔄 Carregando dados...', 'loading');
+        
+        // Initialize simple chart
+        initializeChart();
+        
+        // Get user location
+        await getUserLocation();
+        
+        // Load initial data
+        await updateAllData();
+        
+        // Set up automatic updates every 5 minutes
+        setInterval(updateAllData, 5 * 60 * 1000);
+        
+        updateStatus('🟢 Online - Dados atualizados', 'online');
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        updateStatus('🔴 Erro ao carregar dados', 'offline');
+      }
+    }
+
+    function updateStatus(message, className = '') {
+      const statusElement = document.getElementById('status');
+      statusElement.textContent = message;
+      statusElement.className = `status ${className}`;
+    }
+
+    async function getUserLocation() {
+      if (navigator.geolocation) {
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              userLocation = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+              };
+              console.log('User location:', userLocation);
+              resolve();
+            },
+            () => {
+              console.log('Location access denied, using default location');
+              resolve();
+            }
+          );
+        });
+      }
+    }
+
+    async function updateAllData() {
+      try {
+        const data = await emergencyAPI.getAllEmergencyData();
+        
+        // Update statistics cards
+        updateStatistics(data);
+        
+        // Update chart
+        updateChart(data);
+        
+        // Update proximity alerts
+        updateProximityAlerts(data);
+        
+        // Update timestamp
+        document.getElementById('updateTime').textContent = 
+          `Última atualização: ${new Date().toLocaleString('pt-BR')}`;
+          
+      } catch (error) {
+        console.error('Error updating data:', error);
+        updateStatus('🔴 Erro ao atualizar dados', 'offline');
+      }
+    }
+
+    function updateStatistics(data) {
+      // Update fire statistics
+      const fireCount = data.fires.total || data.fires.data.length;
+      document.getElementById('fireCount').textContent = fireCount;
+      document.getElementById('fireDescription').textContent = 
+        fireCount > 0 ? `${fireCount} incêndio(s) ativo(s) monitorizados` : 'Nenhum incêndio ativo';
+
+      // Update weather statistics
+      const weatherCount = data.weather.total || data.weather.data.length;
+      document.getElementById('weatherCount').textContent = weatherCount;
+      document.getElementById('weatherDescription').textContent = 
+        weatherCount > 0 ? `${weatherCount} aviso(s) meteorológico(s) ativo(s)` : 'Sem avisos meteorológicos';
+
+      // Update earthquake statistics
+      const earthquakeCount = data.earthquakes.total || data.earthquakes.data.length;
+      document.getElementById('earthquakeCount').textContent = earthquakeCount;
+      document.getElementById('earthquakeDescription').textContent = 
+        earthquakeCount > 0 ? `${earthquakeCount} sismo(s) registado(s) nas últimas 24h` : 'Nenhum sismo significativo';
+    }
+
+    function initializeChart() {
+      // Generate hourly data for the last 24 hours
+      const chartContainer = document.getElementById('simpleChart');
+      const labelsContainer = document.getElementById('chartLabels');
+      
+      chartContainer.innerHTML = '';
+      labelsContainer.innerHTML = '';
+      
+      for (let i = 11; i >= 0; i--) {
+        const hour = new Date(Date.now() - i * 2 * 60 * 60 * 1000);
+        const hourLabel = hour.getHours() + 'h';
+        
+        // Create fire bar
+        const fireHeight = Math.floor(Math.random() * 80) + 10;
+        const fireBar = document.createElement('div');
+        fireBar.className = 'chart-bar';
+        fireBar.style.height = fireHeight + 'px';
+        fireBar.title = `${hourLabel}: ${Math.floor(fireHeight/10)} incêndios`;
+        chartContainer.appendChild(fireBar);
+        
+        // Create earthquake bar
+        const eqHeight = Math.floor(Math.random() * 60) + 5;
+        const eqBar = document.createElement('div');
+        eqBar.className = 'chart-bar earthquake';
+        eqBar.style.height = eqHeight + 'px';
+        eqBar.title = `${hourLabel}: ${Math.floor(eqHeight/10)} sismos`;
+        chartContainer.appendChild(eqBar);
+        
+        // Add label
+        const label = document.createElement('div');
+        label.textContent = hourLabel;
+        label.style.flex = '0 0 calc(16.66% - 4px)';
+        label.style.textAlign = 'center';
+        labelsContainer.appendChild(label);
+      }
+    }
+
+    function updateChart(data) {
+      // Chart is already initialized, we could update it here if needed
+      // For now, keeping it static for demo purposes
+    }
+
+    function updateProximityAlerts(data) {
+      const alertsContainer = document.getElementById('alertsContainer');
+      const alerts = emergencyAPI.getProximityAlerts(
+        userLocation.lat, 
+        userLocation.lon, 
+        data.fires, 
+        data.earthquakes,
+        50 // 50km radius
+      );
+
+      if (alerts.length === 0) {
+        alertsContainer.innerHTML = '<div class="no-data">✅ Nenhum alerta de proximidade</div>';
+        return;
+      }
+
+      alertsContainer.innerHTML = alerts.map(alert => `
+        <div class="alert-item ${alert.severity}">
+          <div class="alert-icon">
+            ${alert.type === 'fire' ? '🔥' : '🌍'}
+          </div>
+          <div class="alert-content">
+            <div class="alert-title">
+              ${alert.type === 'fire' ? 'Incêndio' : 'Sismo'} a ${alert.distance}km
+            </div>
+            <div class="alert-details">
+              📍 ${alert.location}
+              ${alert.magnitude ? ` • Magnitude: ${alert.magnitude}` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Focus functions for clicking on cards
+    function focusOnFires() {
+      alert('🔥 Mostrando incêndios no mapa');
+    }
+
+    function focusOnWeather() {
+      alert('⛈️ Centralizando mapa em Portugal');
+    }
+
+    function focusOnEarthquakes() {
+      alert('🌍 Mostrando sismos no mapa');
+    }
+
+    // Service Worker registration
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(reg => console.log('Service Worker registrado:', reg))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     }
+
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', initDashboard);
   </script>
 </body>
 </html>
