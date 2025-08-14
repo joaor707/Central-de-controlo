@@ -1,1 +1,1 @@
-{ "name": "Central Preparação Monitor", "short_name": "CP Monitor", "start_url": ".", "display": "standalone", "background_color": "#fafafa", "theme_color": "#30336b", "description": "Site inicial PWA para monitoramento da central de preparação.", "icons": [ { "src": "tornado.svg", "sizes": "128x128", "type": "image/svg+xml" } ] }
+{"name": "Central Preparação Monitor","short_name": "Monitor PT","start_url": "index.html","display": "standalone","background_color": "#f7f7f7","theme_color": "#1b2836","icons": [{"src": "tornado.svg","type": "image/svg+xml","sizes": "64x64"}]}
