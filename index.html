@@ -1,39 +1,15 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Central Preparação Monitor</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="tornado.svg">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #fafafa;
-      margin: 0;
-      padding: 0;
-    }
-    .icon {
-      width: 128px;
-      margin-top: 40px;
-    }
-    h1 {
-      color: #30336b;
-      margin-top: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Monitorização</title>
 </head>
 <body>
-  <img src="tornado.svg" alt="Tornado" class="icon" />
-  <h1>Central Preparação Monitor</h1>
-  <p>Site PWA inicial.</p>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log('Service Worker registrado:', reg))
-        .catch(err => console.error('Erro ao registrar Service Worker:', err));
-    }
-  </script>
+    <h1>Painel Detalhado</h1>
+    <div id="content">
+        <!-- Conteúdo gerado dinamicamente pelas APIs -->
+    </div>
+    <script src="painel.js"></script>
 </body>
 </html>
