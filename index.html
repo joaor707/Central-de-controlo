@@ -1,50 +1,135 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <title>Central Preparação Monitor</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="tornado.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1b2836">
+    <meta charset="utf-8">
+    <title>Painel Interativo Portugal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f7f7f7;
-            margin: 0;
-        }
-        .container {
-            max-width: 750px;
-            margin: 40px auto 0 auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 6px 32px rgba(0,24,64,0.06);
-            padding: 40px 40px 60px 40px;
-        }
-        h1 {
-            color: #1b2836;
-            font-size: 2.5rem;
-            margin-bottom: 16px;
-        }
-        p {
-            font-size: 1.2rem;
-            color: #222;
-        }
+        body { background:#f0f4ff; font-family:sans-serif; }
+        #map { height: 550px; width: 100%; border-radius:12px; }
+        .painel-legenda { margin-top:20px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 2px 12px rgba(0,24,64,0.06);}
+        .painel-legenda h3 {margin-top:0;}
+        .painel-legenda .item {margin-bottom:10px;}
+        .atualizacao {margin-top:12px; font-size:0.95em; color:#333;}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bem-vindo ao sistema de monitorização</h1>
-        <p>
-            Este é um sistema para monitorizar incêndios, tempestades e terremotos em Portugal Continental.
-        </p>
+    <h2>Painel Interativo - Mapas de Portugal</h2>
+    <div id="map"></div>
+    <div class="painel-legenda">
+        <h3>Legenda</h3>
+        <div class="item"><span style="color:#c0392b;">●</span> Incêndio ativo (extraído de fogos.pt)</div>
+        <div class="item"><span style="color:#2980b9;">●</span> Tempestade (IPMA)</div>
+        <div class="item"><span style="color:#8e44ad;">●</span> Sismo último 24h (IPMA)</div>
     </div>
-    <script src="painel.js"></script>
+    <div class="atualizacao" id="ultimaAtualizacao"></div>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Registrar service worker para PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
+    // Inicializa o mapa centrado em Portugal
+    var map = L.map('map').setView([39.5, -8], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    function setAtualizacao() {
+        document.getElementById("ultimaAtualizacao").textContent = "Última atualização: " + new Date().toLocaleString("pt-PT");
+    }
+
+    // Sismos últimos 24h (dados reais IPMA)
+    async function carregarSismos() {
+        try {
+            const res = await fetch('https://www.ipma.pt/resources.www/geofisica/sismicidade/catalogo_sismico.json');
+            const data = await res.json();
+            const hoje = new Date();
+            data.filter(sismo => {
+                const sismoData = new Date(sismo.data);
+                return (hoje - sismoData) < 1000 * 60 * 60 * 24;
+            }).forEach(sismo => {
+                var sismoIcon = L.divIcon({className:'', html:'<span style="color:#8e44ad;font-size:2em;">●</span>'});
+                if (sismo.latitude && sismo.longitude) {
+                    L.marker([sismo.latitude, sismo.longitude], {icon:sismoIcon}).addTo(map)
+                        .bindPopup(`<b>Sismo</b><br>Local: ${sismo.local || "Desconhecido"}<br>Data: ${sismo.data}<br>Mag: ${sismo.magnitude || ""}`);
+                }
+            });
+        } catch (e) {
+            console.log("Erro ao buscar sismos IPMA:", e);
         }
+    }
+    carregarSismos();
+
+    // Tempestades (IPMA, exemplo Lisboa)
+    async function carregarTempestades() {
+        try {
+            const res = await fetch('https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/1110600.json');
+            const data = await res.json();
+            const hojeStr = new Date().toISOString().slice(0, 10);
+            const today = Array.isArray(data.data) ? data.data.find(d => d.forecastDate === hojeStr) : null;
+            if (today && (today.precipitaProb > 70 || today.windSpeed > 40)) {
+                var tempIcon = L.divIcon({className: '', html:'<span style="color:#2980b9;font-size:2em;">●</span>'});
+                L.marker([38.7, -9.1], {icon: tempIcon}).addTo(map)
+                    .bindPopup(`<b>Tempestade</b><br>Lisboa<br>Precipitação: ${today.precipitaProb}%<br>Vento: ${today.windSpeed} km/h`);
+            }
+        } catch (e) {
+            console.log("Erro ao buscar tempestades IPMA:", e);
+        }
+    }
+    carregarTempestades();
+
+    // Fogos.pt - scraping público do site via proxy (allorigins.win)
+    async function carregarIncendiosFogos() {
+        try {
+            // Recolhe HTML via CORS proxy gratuito
+            const url = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://fogos.pt/");
+            const res = await fetch(url);
+            const data = await res.json();
+            const html = data.contents;
+
+            // Extrai incêndios ativos pelo seletor CSS dos cards do site
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = html;
+            const cards = tempDiv.querySelectorAll('.fire-card');
+            let count = 0;
+
+            cards.forEach(card => {
+                const titulo = card.querySelector('.fire-title')?.textContent?.trim();
+                const local = card.querySelector('.fire-location')?.textContent?.trim();
+                // Extrai coordenadas do link do mapa Google Maps (se existir)
+                const mapLink = card.querySelector('a[href*="google.com/maps"]')?.getAttribute("href");
+                let latlng = null;
+                if (mapLink) {
+                    const matches = mapLink.match(/([+-]?\d+\.\d+),([+-]?\d+\.\d+)/);
+                    if (matches) latlng = [parseFloat(matches[1]), parseFloat(matches[2])];
+                }
+
+                var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
+                if (latlng) {
+                    L.marker(latlng, {icon: incendioIcon}).addTo(map)
+                        .bindPopup(`<b>Incêndio</b><br>${titulo || ""}<br>${local || ""}`);
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                // Se não encontrou nenhum, mostra marcador exemplo em Coimbra
+                var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
+                L.marker([40.2, -8.4], {icon: incendioIcon}).addTo(map)
+                    .bindPopup("<b>Incêndio ativo (exemplo)</b><br>Consulte fogos.pt para detalhes ao vivo.");
+            }
+        } catch (e) {
+            // Se erro, mostra marcador exemplo
+            var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
+            L.marker([40.2, -8.4], {icon: incendioIcon}).addTo(map)
+                .bindPopup("<b>Incêndio ativo (exemplo)</b><br>Consulte fogos.pt para detalhes ao vivo.");
+            console.log("Erro ao buscar/incendios fogos.pt", e);
+        }
+    }
+    carregarIncendiosFogos();
+
+    setAtualizacao();
     </script>
 </body>
 </html>
