@@ -1,5 +1,5 @@
 git checkout -b main
-echo "# Central Preparação Monitor" > README.md
+touch README.md
 git add README.md
-git commit -m "commit inicial"
+git commit -m "Commit inicial"
 git push origin main
