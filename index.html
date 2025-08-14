@@ -13,19 +13,32 @@
         .painel-legenda h3 {margin-top:0;}
         .painel-legenda .item {margin-bottom:10px;}
         .atualizacao {margin-top:12px; font-size:0.95em; color:#333;}
+        .historico-eventos { margin-top:20px; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 12px rgba(0,24,64,0.06); }
+        .historico-eventos h3 { margin-top:0; color:#2c3e50; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     </style>
 </head>
 <body>
-    <h2>Painel Interativo - Portugal & Sismos Mundiais</h2>
-    <div id="map"></div>
-    <div class="painel-legenda">
-        <h3>Legenda</h3>
-        <div class="item"><span style="color:#c0392b;">●</span> Incêndio ativo (fogos.pt)</div>
-        <div class="item"><span style="color:#2980b9;">●</span> Tempestade (IPMA)</div>
-        <div class="item"><span style="color:#8e44ad;">●</span> Sismo Portugal (IPMA)</div>
-        <div class="item"><span style="color:#e67e22;">●</span> Sismo mundial (USGS, Mag ≥ 5)</div>
+    <div class="container">
+        <h2>Painel Interativo - Portugal & Sismos Mundiais</h2>
+        <div id="map"></div>
+        <div class="painel-legenda">
+            <h3>Legenda</h3>
+            <div class="item"><span style="color:#c0392b;">●</span> Incêndio ativo (fogos.pt)</div>
+            <div class="item"><span style="color:#2980b9;">●</span> Tempestade (IPMA)</div>
+            <div class="item"><span style="color:#8e44ad;">●</span> Sismo Portugal (IPMA)</div>
+            <div class="item"><span style="color:#e67e22;">●</span> Sismo mundial (USGS, Mag ≥ 5)</div>
+        </div>
+        <div class="atualizacao" id="ultimaAtualizacao"></div>
+        
+        <!-- Secção de Histórico de Eventos -->
+        <div class="historico-eventos">
+            <h3>Histórico de Eventos (Últimas 24h)</h3>
+            <div id="historico-eventos-lista">
+                <p style="color:#666;">A carregar eventos recentes...</p>
+            </div>
+        </div>
     </div>
-    <div class="atualizacao" id="ultimaAtualizacao"></div>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
@@ -146,5 +159,8 @@
 
     setAtualizacao();
     </script>
+    
+    <!-- Painel de Monitorização -->
+    <script src="painel.js"></script>
 </body>
 </html>
