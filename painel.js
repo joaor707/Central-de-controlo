@@ -35,55 +35,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
     container.appendChild(painel);
 
-    // Sismos (IPMA, dados reais)
+    // Sismos (dados locais)
     async function fetchSismos() {
         try {
-            const res = await fetch('https://www.ipma.pt/resources.www/geofisica/sismicidade/catalogo_sismico.json');
-            const data = await res.json();
-            const hoje = new Date();
-            const ultimos24h = data.filter(sismo => {
-                const sismoData = new Date(sismo.data);
-                return (hoje - sismoData) < 1000 * 60 * 60 * 24;
-            });
-            document.getElementById("terremotos").textContent = ultimos24h.length;
-            document.getElementById("locTerremotos").textContent = ultimos24h.map(s => s.local).join(", ") || 'Nenhuma';
+            const res = await fetch('./eventos.json');
+            const eventos = await res.json();
+            const sismos = eventos.filter(evento => evento.tipo === 'sismo');
+            document.getElementById("terremotos").textContent = sismos.length;
+            document.getElementById("locTerremotos").textContent = sismos.map(s => s.local).join(", ") || 'Nenhuma';
         } catch (e) {
             document.getElementById("terremotos").textContent = "Erro";
             document.getElementById("locTerremotos").textContent = "Erro ao buscar";
         }
     }
 
-    // Incêndios (Fogos.pt via proxy/backend)
+    // Incêndios (dados locais)
     async function fetchIncendios() {
         try {
-            // Exemplo: troque a URL pelo endpoint do seu proxy
-            // const res = await fetch('https://SEU_PROXY/fires');
-            // const data = await res.json();
-            // const ativos = data.length;
-            // const locais = data.map(f => f.local).join(", ");
-            // document.getElementById("incendios").textContent = ativos;
-            // document.getElementById("locIncendios").textContent = locais || 'Nenhuma';
-
-            // Exibe mensagem de instrução caso não haja proxy configurado
-            document.getElementById("incendios").textContent = "Indisponível*";
-            document.getElementById("locIncendios").textContent = "Configurar proxy/API";
+            const res = await fetch('./eventos.json');
+            const eventos = await res.json();
+            const incendios = eventos.filter(evento => evento.tipo === 'incendio');
+            document.getElementById("incendios").textContent = incendios.length;
+            document.getElementById("locIncendios").textContent = incendios.map(i => i.local).join(", ") || 'Nenhuma';
         } catch (e) {
             document.getElementById("incendios").textContent = "Erro";
             document.getElementById("locIncendios").textContent = "Erro ao buscar";
         }
     }
 
-    // Tempestades (IPMA via proxy/backend)
+    // Tempestades (dados locais)
     async function fetchTempestades() {
         try {
-            // Exemplo: troque a URL pelo endpoint do seu proxy
-            // const res = await fetch('https://SEU_PROXY/tempestades');
-            // const data = await res.json();
-            // document.getElementById("tempestades").textContent = data.estado;
-            // document.getElementById("locTempestades").textContent = data.locais;
-
-            document.getElementById("tempestades").textContent = "Indisponível*";
-            document.getElementById("locTempestades").textContent = "Configurar proxy/API";
+            const res = await fetch('./eventos.json');
+            const eventos = await res.json();
+            const tempestades = eventos.filter(evento => evento.tipo === 'tempestade');
+            document.getElementById("tempestades").textContent = tempestades.length;
+            document.getElementById("locTempestades").textContent = tempestades.map(t => t.local).join(", ") || 'Nenhuma';
         } catch (e) {
             document.getElementById("tempestades").textContent = "Erro";
             document.getElementById("locTempestades").textContent = "Erro ao buscar";

@@ -1,1 +1,27 @@
-[ { "tipo": "incendio", "local": "Coimbra", "latitude": 40.2056, "longitude": -8.4196, "data": "2025-08-15T13:30:00Z", "descricao": "Incêndio florestal ativo" }, { "tipo": "tempestade", "local": "Porto", "latitude": 41.1579, "longitude": -8.6291, "data": "2025-08-15T12:00:00Z", "descricao": "Tempestade moderada" }, { "tipo": "sismo", "local": "Lisboa", "latitude": 38.7223, "longitude": -9.1393, "data": "2025-08-15T10:20:00Z", "magnitude": 2.8, "descricao": "Sismo leve sentido na região" } ]
+[
+  {
+    "tipo": "incendio",
+    "local": "Coimbra",
+    "latitude": 40.2056,
+    "longitude": -8.4196,
+    "data": "2025-08-15T13:30:00Z",
+    "descricao": "Incêndio florestal ativo"
+  },
+  {
+    "tipo": "tempestade",
+    "local": "Porto",
+    "latitude": 41.1579,
+    "longitude": -8.6291,
+    "data": "2025-08-15T12:00:00Z",
+    "descricao": "Tempestade moderada"
+  },
+  {
+    "tipo": "sismo",
+    "local": "Lisboa",
+    "latitude": 38.7223,
+    "longitude": -9.1393,
+    "data": "2025-08-15T10:20:00Z",
+    "magnitude": 2.8,
+    "descricao": "Sismo leve sentido na região"
+  }
+]

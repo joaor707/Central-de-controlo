@@ -5,7 +5,7 @@
     <title>Painel Interativo Portugal e Sismos Mundiais</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     <style>
         body { background:#f0f4ff; font-family:sans-serif; }
         #map { height: 550px; width: 100%; border-radius:12px; }
@@ -16,135 +16,86 @@
     </style>
 </head>
 <body>
-    <h2>Painel Interativo - Portugal & Sismos Mundiais</h2>
-    <div id="map"></div>
-    <div class="painel-legenda">
-        <h3>Legenda</h3>
-        <div class="item"><span style="color:#c0392b;">●</span> Incêndio ativo (fogos.pt)</div>
-        <div class="item"><span style="color:#2980b9;">●</span> Tempestade (IPMA)</div>
-        <div class="item"><span style="color:#8e44ad;">●</span> Sismo Portugal (IPMA)</div>
-        <div class="item"><span style="color:#e67e22;">●</span> Sismo mundial (USGS, Mag ≥ 5)</div>
+    <div class="container">
+        <h2>Painel Interativo - Portugal & Sismos Mundiais</h2>
+        <div id="map"></div>
+        <div class="painel-legenda">
+            <h3>Legenda</h3>
+            <div class="item"><span style="color:#c0392b;">●</span> Incêndio ativo</div>
+            <div class="item"><span style="color:#2980b9;">●</span> Tempestade</div>
+            <div class="item"><span style="color:#8e44ad;">●</span> Sismo</div>
+        </div>
+        <div class="atualizacao" id="ultimaAtualizacao"></div>
     </div>
-    <div class="atualizacao" id="ultimaAtualizacao"></div>
     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
-    var map = L.map('map').setView([39.5, -8], 2.5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
+    // Check if Leaflet is available
+    if (typeof L !== 'undefined') {
+        var map = L.map('map').setView([39.5, -8], 2.5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-    function setAtualizacao() {
-        document.getElementById("ultimaAtualizacao").textContent = "Última atualização: " + new Date().toLocaleString("pt-PT");
-    }
-
-    // Sismos Portugal últimos 24h (IPMA)
-    async function carregarSismosPT() {
-        try {
-            const res = await fetch('https://www.ipma.pt/resources.www/geofisica/sismicidade/catalogo_sismico.json');
-            const data = await res.json();
-            const hoje = new Date();
-            data.filter(sismo => {
-                const sismoData = new Date(sismo.data);
-                return (hoje - sismoData) < 1000 * 60 * 60 * 24;
-            }).forEach(sismo => {
-                var sismoIcon = L.divIcon({className:'', html:'<span style="color:#8e44ad;font-size:2em;">●</span>'});
-                if (sismo.latitude && sismo.longitude) {
-                    L.marker([sismo.latitude, sismo.longitude], {icon:sismoIcon}).addTo(map)
-                        .bindPopup(`<b>Sismo Portugal</b><br>Local: ${sismo.local || "Desconhecido"}<br>Data: ${sismo.data}<br>Mag: ${sismo.magnitude || ""}`);
-                }
-            });
-        } catch (e) {
-            console.log("Erro ao buscar sismos IPMA:", e);
+        function setAtualizacao() {
+            document.getElementById("ultimaAtualizacao").textContent = "Última atualização: " + new Date().toLocaleString("pt-PT");
         }
-    }
-    carregarSismosPT();
 
-    // Sismos Mundiais (USGS, magnitude >= 5, últimos 24h)
-    async function carregarSismosMundo() {
-        try {
-            // USGS Earthquake Feed: últimos 24h, magnitude >= 5
-            const url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/5.0_day.geojson";
-            const res = await fetch(url);
-            const data = await res.json();
-            data.features.forEach(eq => {
-                const mag = eq.properties.mag;
-                const lugar = eq.properties.place;
-                const tempo = new Date(eq.properties.time).toLocaleString("pt-PT");
-                const coords = eq.geometry.coordinates; // [lng, lat, depth]
-                var sismoIcon = L.divIcon({className:'', html:'<span style="color:#e67e22;font-size:2em;">●</span>'});
-                L.marker([coords[1], coords[0]], {icon:sismoIcon}).addTo(map)
-                    .bindPopup(`<b>Sismo Mundial</b><br>Local: ${lugar}<br>Data: ${tempo}<br>Mag: ${mag}`);
-            });
-        } catch (e) {
-            console.log("Erro ao buscar sismos USGS:", e);
-        }
-    }
-    carregarSismosMundo();
-
-    // Tempestades (IPMA, exemplo Lisboa)
-    async function carregarTempestades() {
-        try {
-            const res = await fetch('https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/1110600.json');
-            const data = await res.json();
-            const hojeStr = new Date().toISOString().slice(0, 10);
-            const today = Array.isArray(data.data) ? data.data.find(d => d.forecastDate === hojeStr) : null;
-            if (today && (today.precipitaProb > 70 || today.windSpeed > 40)) {
-                var tempIcon = L.divIcon({className: '', html:'<span style="color:#2980b9;font-size:2em;">●</span>'});
-                L.marker([38.7, -9.1], {icon: tempIcon}).addTo(map)
-                    .bindPopup(`<b>Tempestade</b><br>Lisboa<br>Precipitação: ${today.precipitaProb}%<br>Vento: ${today.windSpeed} km/h`);
+        // Eventos locais - carrega todos os eventos do arquivo eventos.json
+        async function carregarEventosLocais() {
+            try {
+                const res = await fetch('./eventos.json');
+                const eventos = await res.json();
+                
+                eventos.forEach(evento => {
+                    let icon, popupContent;
+                    
+                    switch (evento.tipo) {
+                        case 'incendio':
+                            icon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
+                            popupContent = `<b>Incêndio</b><br>Local: ${evento.local}<br>Data: ${new Date(evento.data).toLocaleString("pt-PT")}<br>${evento.descricao}`;
+                            break;
+                        case 'tempestade':
+                            icon = L.divIcon({className: '', html:'<span style="color:#2980b9;font-size:2em;">●</span>'});
+                            popupContent = `<b>Tempestade</b><br>Local: ${evento.local}<br>Data: ${new Date(evento.data).toLocaleString("pt-PT")}<br>${evento.descricao}`;
+                            break;
+                        case 'sismo':
+                            icon = L.divIcon({className:'', html:'<span style="color:#8e44ad;font-size:2em;">●</span>'});
+                            popupContent = `<b>Sismo</b><br>Local: ${evento.local}<br>Data: ${new Date(evento.data).toLocaleString("pt-PT")}<br>Magnitude: ${evento.magnitude || 'N/A'}<br>${evento.descricao}`;
+                            break;
+                        default:
+                            return; // Skip unknown event types
+                    }
+                    
+                    L.marker([evento.latitude, evento.longitude], {icon: icon}).addTo(map)
+                        .bindPopup(popupContent);
+                });
+            } catch (e) {
+                console.log("Erro ao carregar eventos locais:", e);
             }
-        } catch (e) {
-            console.log("Erro ao buscar tempestades IPMA:", e);
         }
-    }
-    carregarTempestades();
-
-    // Fogos.pt - scraping público do site via proxy (allorigins.win)
-    async function carregarIncendiosFogos() {
-        try {
-            const url = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://fogos.pt/");
-            const res = await fetch(url);
-            const data = await res.json();
-            const html = data.contents;
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = html;
-            const cards = tempDiv.querySelectorAll('.fire-card');
-            let count = 0;
-
-            cards.forEach(card => {
-                const titulo = card.querySelector('.fire-title')?.textContent?.trim();
-                const local = card.querySelector('.fire-location')?.textContent?.trim();
-                const mapLink = card.querySelector('a[href*="google.com/maps"]')?.getAttribute("href");
-                let latlng = null;
-                if (mapLink) {
-                    const matches = mapLink.match(/([+-]?\d+\.\d+),([+-]?\d+\.\d+)/);
-                    if (matches) latlng = [parseFloat(matches[1]), parseFloat(matches[2])];
-                }
-                var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
-                if (latlng) {
-                    L.marker(latlng, {icon: incendioIcon}).addTo(map)
-                        .bindPopup(`<b>Incêndio</b><br>${titulo || ""}<br>${local || ""}`);
-                    count++;
-                }
-            });
-
-            if (count === 0) {
-                var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
-                L.marker([40.2, -8.4], {icon: incendioIcon}).addTo(map)
-                    .bindPopup("<b>Incêndio ativo (exemplo)</b><br>Consulte fogos.pt para detalhes ao vivo.");
-            }
-        } catch (e) {
-            var incendioIcon = L.divIcon({className: '', html:'<span style="color:#c0392b;font-size:2em;">●</span>'});
-            L.marker([40.2, -8.4], {icon: incendioIcon}).addTo(map)
-                .bindPopup("<b>Incêndio ativo (exemplo)</b><br>Consulte fogos.pt para detalhes ao vivo.");
-            console.log("Erro ao buscar/incendios fogos.pt", e);
+        carregarEventosLocais();
+        setAtualizacao();
+    } else {
+        // Fallback when Leaflet is not available
+        document.getElementById("map").innerHTML = `
+            <div style="height:100%;display:flex;align-items:center;justify-content:center;background:#e8f4fd;border:2px dashed #2980b9;border-radius:8px;">
+                <div style="text-align:center;padding:20px;">
+                    <h3>Mapa Indisponível</h3>
+                    <p>Biblioteca Leaflet não pôde ser carregada</p>
+                    <p style="font-size:0.9em;color:#666;">Os dados dos eventos estão disponíveis no painel abaixo</p>
+                </div>
+            </div>
+        `;
+        
+        // Still show the last update time
+        function setAtualizacao() {
+            document.getElementById("ultimaAtualizacao").textContent = "Última atualização: " + new Date().toLocaleString("pt-PT");
         }
+        setAtualizacao();
     }
-    carregarIncendiosFogos();
-
-    setAtualizacao();
     </script>
+    <script src="painel.js"></script>
 </body>
 </html>
